@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Activition_Form_3.8.4 Web</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    background: #f0f2f5;
+    display: flex; justify-content: center; align-items: center;
+    min-height: 100vh; padding: 16px;
+}
+.card {
+    background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    padding: 24px; width: 100%; max-width: 420px;
+}
+h2 { text-align: center; font-size: 18px; color: #1a1a1a; margin-bottom: 20px; }
+label { display: block; font-size: 14px; color: #333; margin-bottom: 4px; font-weight: 500; }
+input[type="text"], input[type="number"], input[type="password"], input[type="date"] {
+    width: 100%; padding: 10px 12px; border: 1px solid #d9d9d9;
+    border-radius: 6px; font-size: 14px; outline: none;
+    transition: border-color 0.2s;
+}
+input:focus { border-color: #1677ff; box-shadow: 0 0 0 2px rgba(22,119,255,0.1); }
+.row { display: flex; gap: 8px; align-items: flex-end; }
+.row > *:first-child { flex: 1; }
+.btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 10px 16px; border: none; border-radius: 6px;
+    font-size: 14px; cursor: pointer; white-space: nowrap;
+    transition: opacity 0.2s;
+}
+.btn:active { opacity: 0.8; }
+.btn-sm { padding: 6px 12px; font-size: 13px; }
+.btn-primary { background: #1677ff; color: #fff; }
+.btn-default { background: #f0f0f0; color: #333; }
+.btn-success { background: #52c41a; color: #fff; }
+.btn-block { width: 100%; }
+.divider { border: none; border-top: 1px dashed #e8e8e8; margin: 20px 0; }
+.section-title { font-size: 13px; color: #999; text-align: center; margin-bottom: 12px; }
+.result { background: #f6ffed; border: 1px solid #b7eb8f; border-radius: 6px; padding: 10px 12px; font-size: 13px; color: #389e0d; word-break: break-all; margin-top: 4px; }
+.result-err { background: #fff2f0; border-color: #ffccc7; color: #cf1322; }
+.hint { font-size: 12px; color: #999; margin-top: 4px; }
+.mt8 { margin-top: 8px; }
+.mt16 { margin-top: 16px; }
+.mb16 { margin-bottom: 16px; }
+.info-tag { display: inline-block; background: #e6f4ff; color: #1677ff; font-size: 12px; padding: 2px 8px; border-radius: 4px; margin-left: 4px; }
+
+/* 密码系统 */
+.pwd-wrap { display: flex; gap: 8px; align-items: center; }
+.pwd-wrap input { flex: 1; }
+#togglePwdBtn { width: 44px; height: 44px; padding: 0; font-size: 18px; line-height: 44px; text-align: center; }
+#logoutLink { font-size: 13px; color: #999; cursor: pointer; float: right; font-weight: normal; text-decoration: none; }
+#logoutLink:active { color: #1677ff; }
+.login-error { background: #fff2f0; border: 1px solid #ffccc7; border-radius: 6px; padding: 8px 12px; font-size: 13px; color: #cf1322; text-align: center; }
+.admin-hint { font-size: 12px; color: #999; margin-top: 2px; }
+.deploy-block { background: #f5f5f5; border: 1px solid #e0e0e0; border-radius: 6px; padding: 10px 12px; font-family: "Consolas","Courier New",monospace; font-size: 12px; color: #333; word-break: break-all; user-select: all; -webkit-user-select: all; margin-top: 8px; }
+.status-bar { font-size: 12px; color: #fa8c16; text-align: center; margin-top: 8px; }
+.status-bar.saved { color: #52c41a; }
+</style>
+</head>
+<body>
+<div class="card">
+    <h2>Activition_Form_3.8.4 Web<a id="logoutLink" style="display:none;" href="#">退出</a></h2>
+
+    <!-- 登录区 -->
+    <div id="loginSection">
+        <label>请输入密码：</label>
+        <div class="pwd-wrap mt8">
+            <input type="password" id="loginPwd" placeholder="输入访问密码">
+            <button class="btn btn-default btn-sm" id="togglePwdBtn">👁</button>
+        </div>
+        <button class="btn btn-primary btn-block mt16" id="loginBtn">登 录</button>
+        <div id="loginError" class="mt8" style="display:none;"></div>
+    </div>
+
+    <!-- 工具区 -->
+    <div id="toolSection" style="display:none;">
+        <!-- 机器码 -->
+        <label>机器码：</label>
+        <div class="row mt8">
+            <input type="text" id="machineCode" placeholder="粘贴客户发来的机器码">
+            <button class="btn btn-default btn-sm" onclick="genMachineCode()">生成测试</button>
+        </div>
+
+        <!-- 授权天数 -->
+        <div class="mt16">
+            <label>授权天数：</label>
+            <div class="row mt8">
+                <input type="number" id="days" value="365" min="1" max="9999" placeholder="天数">
+                <button class="btn btn-default btn-sm" onclick="setPermanent()">永久</button>
+            </div>
+        </div>
+
+        <!-- 备注 -->
+        <div class="mt16">
+            <label>备注（可选）：</label>
+            <input type="text" id="note" class="mt8" placeholder="项目名称 / 客户名">
+        </div>
+
+        <!-- 生成按钮 -->
+        <button id="genBtn" class="btn btn-primary btn-block mt16" onclick="genActivationCode()">生成激活码</button>
+
+        <!-- 激活码结果 -->
+        <div id="genResult" class="result mt16" style="display:none;"></div>
+        <button id="copyBtn" class="btn btn-success btn-block mt8" style="display:none;" onclick="copyCode()">复制激活码</button>
+
+        <!-- 验证区 -->
+        <hr class="divider">
+        <div class="section-title">── 验证区 ──</div>
+
+        <label class="mt16">激活码：</label>
+        <input type="text" id="verifyCode" class="mt8" placeholder="输入激活码验证内容">
+        <button class="btn btn-default btn-block mt8" onclick="verifyCode()">验证激活码</button>
+        <div id="verifyResult" class="mt8" style="display:none;"></div>
+
+    </div>
+
+    <!-- 管理面板（仅主密码可见） -->
+    <div id="adminSection" style="display:none;">
+        <hr class="divider">
+        <div class="section-title">── 管理面板 ──</div>
+
+        <label class="mt16">修改普通密码：</label>
+        <div class="row mt8">
+            <input type="text" id="newNormalPwd" placeholder="新普通密码（至少4位）">
+            <button class="btn btn-primary btn-sm" onclick="changeNormalPwd()">保存</button>
+        </div>
+        <div class="admin-hint">供所有供应商使用的访问密码</div>
+
+        <label class="mt16">修改主密码：</label>
+        <div class="row mt8">
+            <input type="text" id="newMasterPwd" placeholder="新主密码（至少6位）">
+            <button class="btn btn-primary btn-sm" onclick="changeMasterPwd()">保存</button>
+        </div>
+        <div class="admin-hint">用于访问管理面板的密码</div>
+
+        <button class="btn btn-success btn-block mt16" onclick="downloadUpdatedHtml()">
+            下载更新后的 HTML 文件
+        </button>
+
+        <div class="deploy-block mt8">
+            npx surge D:/projects/demo/deploy --domain act-tool-384.surge.sh
+        </div>
+        <div class="admin-hint mt8">
+            1. 点击上方按钮下载 activation.html<br>
+            2. 将文件放到 D:\projects\demo\deploy\ 目录<br>
+            3. 运行上方命令部署到线上
+        </div>
+
+        <div id="adminStatus" class="status-bar mt8" style="display:none;"></div>
+    </div>
+</div>
+
+<script>
+// ====== PASSWORD_DEFAULTS_START ======
+var DEFAULT_NORMAL_PASSWORD = "yxsj";
+var DEFAULT_MASTER_PASSWORD = "master384!Admin";
+
+// ====== PASSWORD_DEFAULTS_END ======
+
+function $(id) { return document.getElementById(id); }
+
+// ====== 密码解析 ======
+function getCurrentPassword(type) {
+    if (type === 'normal') return localStorage.getItem('pwd_normal') || DEFAULT_NORMAL_PASSWORD;
+    if (type === 'master') return localStorage.getItem('pwd_master') || DEFAULT_MASTER_PASSWORD;
+}
+
+// ====== 会话管理 ======
+function getSession() {
+    try {
+        var raw = localStorage.getItem('auth_session');
+        if (!raw) return null;
+        var session = JSON.parse(raw);
+        if (Date.now() > session.expiresAt) {
+            localStorage.removeItem('auth_session');
+            return null;
+        }
+        return session;
+    } catch(e) {
+        localStorage.removeItem('auth_session');
+        return null;
+    }
+}
+function saveSession(role) {
+    var session = {
+        role: role,
+        timestamp: Date.now(),
+        expiresAt: Date.now() + 24 * 60 * 60 * 1000
+    };
+    localStorage.setItem('auth_session', JSON.stringify(session));
+}
+function clearSession() {
+    localStorage.removeItem('auth_session');
+}
+
+// ====== 登录/退出 ======
+function login() {
+    var pwd = $('loginPwd').value.trim();
+    var errEl = $('loginError');
+    if (!pwd) { showLoginError('请输入密码'); return; }
+
+    var masterPwd = getCurrentPassword('master');
+    var normalPwd = getCurrentPassword('normal');
+
+    // 先匹配主密码
+    if (pwd === masterPwd) {
+        saveSession('master');
+        showMaster();
+        return;
+    }
+
+    // 再匹配普通密码
+    if (pwd === normalPwd) {
+        saveSession('normal');
+        showNormal();
+        return;
+    }
+
+    showLoginError('密码错误，请重试');
+}
+
+function showLoginError(msg) {
+    var el = $('loginError');
+    el.style.display = 'block';
+    el.className = 'login-error';
+    el.textContent = msg;
+}
+
+function showNormal() {
+    $('loginSection').style.display = 'none';
+    $('toolSection').style.display = 'block';
+    $('adminSection').style.display = 'none';
+    $('logoutLink').style.display = 'inline';
+    $('loginPwd').value = '';
+    $('loginError').style.display = 'none';
+}
+
+function showMaster() {
+    $('loginSection').style.display = 'none';
+    $('toolSection').style.display = 'block';
+    $('adminSection').style.display = 'block';
+    $('logoutLink').style.display = 'inline';
+    $('loginPwd').value = '';
+    $('loginError').style.display = 'none';
+    // 预填当前值
+    $('newNormalPwd').value = getCurrentPassword('normal');
+    $('newMasterPwd').value = getCurrentPassword('master');
+}
+
+function logout() {
+    clearSession();
+    $('loginSection').style.display = 'block';
+    $('toolSection').style.display = 'none';
+    $('adminSection').style.display = 'none';
+    $('logoutLink').style.display = 'none';
+    $('loginPwd').value = '';
+    $('loginError').style.display = 'none';
+}
+
+function togglePwdVisibility() {
+    var input = $('loginPwd');
+    var btn = $('togglePwdBtn');
+    if (input.type === 'password') {
+        input.type = 'text';
+        btn.textContent = '🙈';
+    } else {
+        input.type = 'password';
+        btn.textContent = '👁';
+    }
+}
+
+// ====== 管理员修改密码 ======
+function changeNormalPwd() {
+    var newPwd = $('newNormalPwd').value.trim();
+    if (newPwd.length < 4) { showAdminStatus('普通密码至少需要4位', false); return; }
+    localStorage.setItem('pwd_normal', newPwd);
+    showAdminStatus('普通密码已更新，请下载文件并重新部署以同步给所有用户', true);
+}
+
+function changeMasterPwd() {
+    var newPwd = $('newMasterPwd').value.trim();
+    if (newPwd.length < 6) { showAdminStatus('主密码至少需要6位', false); return; }
+    localStorage.setItem('pwd_master', newPwd);
+    showAdminStatus('主密码已更新，请下载文件并重新部署以同步', true);
+}
+
+
+function showAdminStatus(msg, isSuccess) {
+    var el = $('adminStatus');
+    el.style.display = 'block';
+    el.textContent = msg;
+    el.className = 'status-bar' + (isSuccess ? ' saved' : '');
+    setTimeout(function() { el.style.display = 'none'; }, 5000);
+}
+
+// ====== 下载更新后的 HTML ======
+function downloadUpdatedHtml() {
+    var startMarker = '// ====== PASSWORD_DEFAULTS_START ======';
+    var endMarker   = '// ====== PASSWORD_DEFAULTS_END ======';
+
+    // 通过 innerHTML 获取当前 DOM（可能和源文件有微小差异，但功能一致）
+    var html = document.documentElement.outerHTML;
+    var startIdx = html.indexOf(startMarker);
+    var endIdx = html.indexOf(endMarker);
+    if (startIdx === -1 || endIdx === -1) {
+        showAdminStatus('无法定位密码配置块，请手动编辑 HTML', false);
+        return;
+    }
+    endIdx += endMarker.length;
+
+    var newBlock =
+        startMarker + '\n' +
+        'var DEFAULT_NORMAL_PASSWORD = "' + (localStorage.getItem('pwd_normal') || DEFAULT_NORMAL_PASSWORD) + '";\n' +
+        'var DEFAULT_MASTER_PASSWORD = "' + (localStorage.getItem('pwd_master') || DEFAULT_MASTER_PASSWORD) + '";\n' +
+        endMarker;
+
+    var updatedHtml = '<!DOCTYPE html>\n' + html.slice(0, startIdx) + newBlock + html.slice(endIdx);
+
+    var blob = new Blob([updatedHtml], { type: 'text/html;charset=UTF-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'activation.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showAdminStatus('文件已下载，请按下方说明重新部署', true);
+}
+
+// ====== 初始化 ======
+function init() {
+    var session = getSession();
+    if (session) {
+        if (session.role === 'master') {
+            showMaster();
+        } else {
+            showNormal();
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    init();
+    $('loginBtn').addEventListener('click', login);
+    $('togglePwdBtn').addEventListener('click', togglePwdVisibility);
+    $('logoutLink').addEventListener('click', function(e) {
+        e.preventDefault();
+        logout();
+    });
+    $('loginPwd').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') login();
+    });
+});
+
+// ---------------------------------------------------------------------------
+// 随机数工具
+// ---------------------------------------------------------------------------
+function randInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+// ---------------------------------------------------------------------------
+// 1. 生成机器码 (Class1.cs: Get_Machine_Code, line 174-185)
+//    machineCode = (r1 * r2).toString() + r2.toString()
+//    r1 = 1000~9997, r2 = 11~99
+// ---------------------------------------------------------------------------
+function genMachineCode() {
+    var r1 = randInt(1000, 9997);
+    var r2 = randInt(11, 99);
+    var machineCode = (r1 * r2).toString() + r2.toString();
+    $('machineCode').value = machineCode;
+}
+
+// ---------------------------------------------------------------------------
+// 2. 生成激活码 (Class1.cs: GetActivation_Code, line 237-252)
+//    - 从机器码最后2位提取随机数r2，除以r2得到发送码sendCode
+//    - sendCode+1，拼接天数(4位)，乘以新随机数(11-99)，末尾拼上新随机数
+// ---------------------------------------------------------------------------
+function genActivationCode() {
+    var machineCode = $('machineCode').value.trim();
+    var days = parseInt($('days').value) || 0;
+    var note = $('note').value.trim();
+
+    if (machineCode.length < 6) {
+        showGenResult('机器码无效，请检查后重新输入', true);
+        return;
+    }
+    if (days <= 0) {
+        showGenResult('授权天数必须大于 0', true);
+        return;
+    }
+    if (days > 9999) days = 9999;
+
+    // 提取最后2位作为除数
+    var randomStr = machineCode.slice(-2);
+    var randomNumber = parseInt(randomStr);
+    if (randomNumber === 0) {
+        showGenResult('机器码格式错误（除数为0）', true);
+        return;
+    }
+
+    var prefix = machineCode.slice(0, -2);
+    var sendCode = Math.floor(parseInt(prefix, 10) / randomNumber);
+
+    // 发送码+1
+    sendCode++;
+
+    // 重新编码
+    var newRandom = randInt(11, 99);
+    var base = sendCode.toString() + days.toString().padStart(4, '0');
+    var activationCode = (parseInt(base, 10) * newRandom).toString() + newRandom.toString();
+
+    // 追加备注
+    if (note !== '') {
+        activationCode += ' ' + note;
+    }
+
+    showGenResult('激活码：<b>' + activationCode + '</b>', false);
+    $('copyBtn').style.display = 'block';
+    // 记住当前激活码用于复制
+    $('genResult').dataset.code = activationCode;
+}
+
+function showGenResult(msg, isErr) {
+    var el = $('genResult');
+    el.style.display = 'block';
+    el.innerHTML = msg;
+    el.className = 'result' + (isErr ? ' result-err' : '');
+    if (isErr) {
+        el.removeAttribute('data-code');
+        $('copyBtn').style.display = 'none';
+    }
+}
+
+function setPermanent() {
+    $('days').value = '9999';
+}
+
+function copyCode() {
+    var code = $('genResult').dataset.code || '';
+    if (!code) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(code).then(function() {
+            var btn = $('copyBtn');
+            var orig = btn.textContent;
+            btn.textContent = '已复制！';
+            setTimeout(function() { btn.textContent = orig; }, 1500);
+        });
+    } else {
+        // 降级方案
+        var ta = document.createElement('textarea');
+        ta.value = code;
+        ta.style.position = 'fixed'; ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        var btn = $('copyBtn');
+        var orig = btn.textContent;
+        btn.textContent = '已复制！';
+        setTimeout(function() { btn.textContent = orig; }, 1500);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// 3. 验证激活码 (Class1.cs: DecryptRandomID, line 218-235)
+//    - 从激活码最后2位提取随机数，除以它还原 base
+//    - base 后4位=天数，前面=发送码
+// ---------------------------------------------------------------------------
+function verifyCode() {
+    var input = $('verifyCode').value.trim();
+    var el = $('verifyResult');
+    if (!input) {
+        el.style.display = 'block';
+        el.className = 'result result-err';
+        el.innerHTML = '请输入激活码';
+        return;
+    }
+
+    // 按空格拆分：code + 备注
+    var parts = input.split(/\s+/);
+    var code = parts[0];
+    var note = parts.slice(1).join(' ');
+
+    if (code.length <= 2) {
+        el.style.display = 'block';
+        el.className = 'result result-err';
+        el.innerHTML = '激活码格式无效';
+        return;
+    }
+
+    var randomStr = code.slice(-2);
+    var randomNumber = parseInt(randomStr, 10);
+    if (randomNumber === 0) {
+        el.style.display = 'block';
+        el.className = 'result result-err';
+        el.innerHTML = '激活码格式错误（除数为0）';
+        return;
+    }
+
+    var decoded = Math.floor(parseInt(code.slice(0, -2), 10) / randomNumber);
+    var decodedStr = decoded.toString();
+
+    if (decodedStr.length < 5) {
+        el.style.display = 'block';
+        el.className = 'result result-err';
+        el.innerHTML = '激活码解析失败';
+        return;
+    }
+
+    var days = parseInt(decodedStr.slice(-4), 10);
+    var sendCode = decodedStr.slice(0, -4);
+    var daysLabel = days >= 9999 ? '永久' : days + ' 天';
+
+    var html = '<b>发送码：</b>' + sendCode + '<br>';
+    html += '<b>授权天数：</b><span class="info-tag">' + daysLabel + '</span>';
+    if (note) {
+        html += '<br><b>备注：</b>' + note;
+    }
+
+    el.style.display = 'block';
+    el.className = 'result';
+    el.innerHTML = html;
+}
+</script>
+</body>
+</html>
