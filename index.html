@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
-<head>
+<html lang="zh-CN"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Activition_Form_3.8.4 Web</title>
@@ -63,21 +62,21 @@ input:focus { border-color: #1677ff; box-shadow: 0 0 0 2px rgba(22,119,255,0.1);
 </head>
 <body>
 <div class="card">
-    <h2>Activition_Form_3.8.4 Web<a id="logoutLink" style="display:none;" href="#">退出</a></h2>
+    <h2>Activition_Form_3.8.4 Web<a id="logoutLink" style="display: inline;" href="#">退出</a></h2>
 
     <!-- 登录区 -->
-    <div id="loginSection">
+    <div id="loginSection" style="display: none;">
         <label>请输入密码：</label>
         <div class="pwd-wrap mt8">
             <input type="password" id="loginPwd" placeholder="输入访问密码">
             <button class="btn btn-default btn-sm" id="togglePwdBtn">👁</button>
         </div>
         <button class="btn btn-primary btn-block mt16" id="loginBtn">登 录</button>
-        <div id="loginError" class="mt8" style="display:none;"></div>
+        <div id="loginError" class="login-error" style="display: none;">密码错误，请重试</div>
     </div>
 
     <!-- 工具区 -->
-    <div id="toolSection" style="display:none;">
+    <div id="toolSection" style="display: block;">
         <!-- 机器码 -->
         <label>机器码：</label>
         <div class="row mt8">
@@ -119,7 +118,7 @@ input:focus { border-color: #1677ff; box-shadow: 0 0 0 2px rgba(22,119,255,0.1);
     </div>
 
     <!-- 管理面板（仅主密码可见） -->
-    <div id="adminSection" style="display:none;">
+    <div id="adminSection" style="display: block;">
         <hr class="divider">
         <div class="section-title">── 管理面板 ──</div>
 
@@ -146,7 +145,7 @@ input:focus { border-color: #1677ff; box-shadow: 0 0 0 2px rgba(22,119,255,0.1);
             <button class="btn btn-default btn-sm" id="toggleTokenBtn">👁</button>
         </div>
         <div class="admin-hint">
-            <a href="https://github.com/settings/tokens/new?scopes=repo&description=act-tool-384-deploy" target="_blank">点此创建 token</a>，勾选 repo 权限，生成后粘贴到上方（只需配置一次）
+            <a href="https://github.com/settings/tokens/new?scopes=repo&amp;description=act-tool-384-deploy" target="_blank">点此创建 token</a>，勾选 repo 权限，生成后粘贴到上方（只需配置一次）
         </div>
 
         <button class="btn btn-primary btn-block mt8" onclick="pushToGithub()">
@@ -158,15 +157,14 @@ input:focus { border-color: #1677ff; box-shadow: 0 0 0 2px rgba(22,119,255,0.1);
         </button>
 
         <div id="pushStatus" class="status-bar mt8" style="display:none;"></div>
-        <div id="adminStatus" class="status-bar mt8" style="display:none;"></div>
+        <div id="adminStatus" class="status-bar saved" style="display: none;">普通密码已更新，请下载文件并重新部署以同步给所有用户</div>
     </div>
 </div>
 
 <script>
 // ====== PASSWORD_DEFAULTS_START ======
-var DEFAULT_NORMAL_PASSWORD = "yxsj";
+var DEFAULT_NORMAL_PASSWORD = "qwer";
 var DEFAULT_MASTER_PASSWORD = "master384!Admin";
-
 // ====== PASSWORD_DEFAULTS_END ======
 
 function $(id) { return document.getElementById(id); }
@@ -632,5 +630,6 @@ function verifyCode() {
     el.innerHTML = html;
 }
 </script>
-</body>
-</html>
+
+
+</body></html>
