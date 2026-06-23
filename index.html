@@ -141,8 +141,8 @@ input:focus { border-color: #1677ff; box-shadow: 0 0 0 2px rgba(22,119,255,0.1);
 
         <label class="mt16">GitHub Token：</label>
         <div class="row mt8">
-            <input type="password" id="githubToken" placeholder="粘贴 GitHub Personal Access Token">
-            <button class="btn btn-default btn-sm" id="toggleTokenBtn">👁</button>
+            <input type="text" id="githubToken" placeholder="粘贴 GitHub Personal Access Token">
+            <button class="btn btn-default btn-sm" id="toggleTokenBtn">🙈</button>
         </div>
         <div class="admin-hint">
             <a href="https://github.com/settings/tokens/new?scopes=repo&amp;description=act-tool-384-deploy" target="_blank">点此创建 token</a>，勾选 repo 权限，生成后粘贴到上方（只需配置一次）
@@ -156,7 +156,7 @@ input:focus { border-color: #1677ff; box-shadow: 0 0 0 2px rgba(22,119,255,0.1);
             下载 HTML 文件（备用）
         </button>
 
-        <div id="pushStatus" class="status-bar mt8" style="display:none;"></div>
+        <div id="pushStatus" class="status-bar saved" style="display: none;">推送成功！1-2 分钟后在线页面生效</div>
         <div id="adminStatus" class="status-bar saved" style="display: none;">普通密码已更新，请下载文件并重新部署以同步给所有用户</div>
     </div>
 </div>
