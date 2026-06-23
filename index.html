@@ -175,13 +175,24 @@ function getCurrentPassword(type) {
     if (type === 'master') return localStorage.getItem('pwd_master') || DEFAULT_MASTER_PASSWORD;
 }
 
+function pwdFingerprint() {
+    // 基于当前所有密码计算的指纹，密码改了旧会话自动失效
+    var s = getCurrentPassword('normal') + '|' + getCurrentPassword('master');
+    var hash = 0;
+    for (var i = 0; i < s.length; i++) {
+        hash = ((hash << 5) - hash) + s.charCodeAt(i);
+        hash |= 0;
+    }
+    return hash.toString();
+}
+
 // ====== 会话管理 ======
 function getSession() {
     try {
         var raw = localStorage.getItem('auth_session');
         if (!raw) return null;
         var session = JSON.parse(raw);
-        if (Date.now() > session.expiresAt) {
+        if (Date.now() > session.expiresAt || session.fingerprint !== pwdFingerprint()) {
             localStorage.removeItem('auth_session');
             return null;
         }
@@ -195,7 +206,8 @@ function saveSession(role) {
     var session = {
         role: role,
         timestamp: Date.now(),
-        expiresAt: Date.now() + 24 * 60 * 60 * 1000
+        expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+        fingerprint: pwdFingerprint()
     };
     localStorage.setItem('auth_session', JSON.stringify(session));
 }
