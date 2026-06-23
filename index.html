@@ -142,12 +142,14 @@ input:focus { border-color: #1677ff; box-shadow: 0 0 0 2px rgba(22,119,255,0.1);
         </button>
 
         <div class="deploy-block mt8">
-            npx surge D:/projects/demo/deploy --domain act-tool-384.surge.sh
+            cp D:/projects/demo/activation.html D:/projects/demo/pages-deploy/index.html<br>
+            cd D:/projects/demo/pages-deploy<br>
+            git add index.html &amp;&amp; git commit -m "Update" &amp;&amp; git push
         </div>
         <div class="admin-hint mt8">
             1. 点击上方按钮下载 activation.html<br>
-            2. 将文件放到 D:\projects\demo\deploy\ 目录<br>
-            3. 运行上方命令部署到线上
+            2. 将文件放到 D:\projects\demo\pages-deploy\ 重命名为 index.html<br>
+            3. 运行上方命令推送到 GitHub Pages 即可
         </div>
 
         <div id="adminStatus" class="status-bar mt8" style="display:none;"></div>
