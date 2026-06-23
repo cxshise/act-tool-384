@@ -167,6 +167,7 @@ input:focus { border-color: #1677ff; box-shadow: 0 0 0 2px rgba(22,119,255,0.1);
 
 <script>
 // ====== PASSWORD_DEFAULTS_START ======
+var APP_VERSION = "2";
 var DEFAULT_NORMAL_PASSWORD = "qwer";
 var DEFAULT_MASTER_PASSWORD = "master384!Admin";
 
@@ -462,6 +463,13 @@ function toggleTokenVisibility() {
 
 // ====== 初始化 ======
 function init() {
+    // 版本变了，清空所有旧数据
+    var storedVersion = localStorage.getItem('app_version');
+    if (storedVersion !== APP_VERSION) {
+        localStorage.clear();
+        localStorage.setItem('app_version', APP_VERSION);
+    }
+
     var session = getSession();
     if (session) {
         if (session.role === 'master') {
