@@ -137,21 +137,27 @@ input:focus { border-color: #1677ff; box-shadow: 0 0 0 2px rgba(22,119,255,0.1);
         </div>
         <div class="admin-hint">用于访问管理面板的密码</div>
 
-        <button class="btn btn-success btn-block mt16" onclick="downloadUpdatedHtml()">
-            下载更新后的 HTML 文件
+        <hr class="divider">
+        <div class="section-title">── 同步部署到 GitHub ──</div>
+
+        <label class="mt16">GitHub Token：</label>
+        <div class="row mt8">
+            <input type="password" id="githubToken" placeholder="粘贴 GitHub Personal Access Token">
+            <button class="btn btn-default btn-sm" id="toggleTokenBtn">👁</button>
+        </div>
+        <div class="admin-hint">
+            <a href="https://github.com/settings/tokens/new?scopes=repo&description=act-tool-384-deploy" target="_blank">点此创建 token</a>，勾选 repo 权限，生成后粘贴到上方（只需配置一次）
+        </div>
+
+        <button class="btn btn-primary btn-block mt8" onclick="pushToGithub()">
+            推送到 GitHub Pages
         </button>
 
-        <div class="deploy-block mt8">
-            cp D:/projects/demo/activation.html D:/projects/demo/pages-deploy/index.html<br>
-            cd D:/projects/demo/pages-deploy<br>
-            git add index.html &amp;&amp; git commit -m "Update" &amp;&amp; git push
-        </div>
-        <div class="admin-hint mt8">
-            1. 点击上方按钮下载 activation.html<br>
-            2. 将文件放到 D:\projects\demo\pages-deploy\ 重命名为 index.html<br>
-            3. 运行上方命令推送到 GitHub Pages 即可
-        </div>
+        <button class="btn btn-default btn-block mt8" onclick="downloadUpdatedHtml()">
+            下载 HTML 文件（备用）
+        </button>
 
+        <div id="pushStatus" class="status-bar mt8" style="display:none;"></div>
         <div id="adminStatus" class="status-bar mt8" style="display:none;"></div>
     </div>
 </div>
@@ -251,6 +257,8 @@ function showMaster() {
     // 预填当前值
     $('newNormalPwd').value = getCurrentPassword('normal');
     $('newMasterPwd').value = getCurrentPassword('master');
+    // 恢复已保存的 token
+    $('githubToken').value = localStorage.getItem('github_token') || '';
 }
 
 function logout() {
@@ -299,19 +307,15 @@ function showAdminStatus(msg, isSuccess) {
     setTimeout(function() { el.style.display = 'none'; }, 5000);
 }
 
-// ====== 下载更新后的 HTML ======
-function downloadUpdatedHtml() {
+// ====== 生成更新后的 HTML ======
+function getUpdatedHtml() {
     var startMarker = '// ====== PASSWORD_DEFAULTS_START ======';
     var endMarker   = '// ====== PASSWORD_DEFAULTS_END ======';
 
-    // 通过 innerHTML 获取当前 DOM（可能和源文件有微小差异，但功能一致）
     var html = document.documentElement.outerHTML;
     var startIdx = html.indexOf(startMarker);
     var endIdx = html.indexOf(endMarker);
-    if (startIdx === -1 || endIdx === -1) {
-        showAdminStatus('无法定位密码配置块，请手动编辑 HTML', false);
-        return;
-    }
+    if (startIdx === -1 || endIdx === -1) return null;
     endIdx += endMarker.length;
 
     var newBlock =
@@ -320,7 +324,12 @@ function downloadUpdatedHtml() {
         'var DEFAULT_MASTER_PASSWORD = "' + (localStorage.getItem('pwd_master') || DEFAULT_MASTER_PASSWORD) + '";\n' +
         endMarker;
 
-    var updatedHtml = '<!DOCTYPE html>\n' + html.slice(0, startIdx) + newBlock + html.slice(endIdx);
+    return '<!DOCTYPE html>\n' + html.slice(0, startIdx) + newBlock + html.slice(endIdx);
+}
+
+function downloadUpdatedHtml() {
+    var updatedHtml = getUpdatedHtml();
+    if (!updatedHtml) { showAdminStatus('无法定位密码配置块，请手动编辑 HTML', false); return; }
 
     var blob = new Blob([updatedHtml], { type: 'text/html;charset=UTF-8' });
     var url = URL.createObjectURL(blob);
@@ -332,7 +341,98 @@ function downloadUpdatedHtml() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    showAdminStatus('文件已下载，请按下方说明重新部署', true);
+    showAdminStatus('文件已下载', true);
+}
+
+// ====== GitHub 推送 ======
+function pushToGithub() {
+    var token = $('githubToken').value.trim();
+    if (!token) { showPushStatus('请先粘贴 GitHub Token', false); return; }
+
+    var updatedHtml = getUpdatedHtml();
+    if (!updatedHtml) { showPushStatus('无法生成更新内容', false); return; }
+
+    // 保存 token
+    localStorage.setItem('github_token', token);
+
+    showPushStatus('正在推送...', null);
+
+    // Step 1: 获取当前文件的 sha
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'https://api.github.com/repos/cxshise/act-tool-384/contents/index.html', true);
+    xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+    xhr.setRequestHeader('Accept', 'application/vnd.github.v3+json');
+    xhr.onload = function() {
+        if (xhr.status !== 200) {
+            showPushStatus('获取文件信息失败 (' + xhr.status + ')，请检查 Token 是否正确', false);
+            return;
+        }
+        try {
+            var data = JSON.parse(xhr.responseText);
+            var sha = data.sha;
+
+            // Step 2: 推送更新
+            var content = btoa(unescape(encodeURIComponent(updatedHtml)));
+            var body = JSON.stringify({
+                message: 'Update activation tool',
+                content: content,
+                sha: sha,
+                branch: 'main'
+            });
+
+            var putXhr = new XMLHttpRequest();
+            putXhr.open('PUT', 'https://api.github.com/repos/cxshise/act-tool-384/contents/index.html', true);
+            putXhr.setRequestHeader('Authorization', 'Bearer ' + token);
+            putXhr.setRequestHeader('Accept', 'application/vnd.github.v3+json');
+            putXhr.setRequestHeader('Content-Type', 'application/json');
+            putXhr.onload = function() {
+                if (putXhr.status === 200 || putXhr.status === 201) {
+                    showPushStatus('推送成功！1-2 分钟后在线页面生效', true);
+                } else {
+                    try {
+                        var err = JSON.parse(putXhr.responseText);
+                        showPushStatus('推送失败 (' + putXhr.status + '): ' + (err.message || putXhr.responseText), false);
+                    } catch(e) {
+                        showPushStatus('推送失败 (' + putXhr.status + ')', false);
+                    }
+                }
+            };
+            putXhr.onerror = function() {
+                showPushStatus('网络错误，推送失败', false);
+            };
+            putXhr.send(body);
+        } catch(e) {
+            showPushStatus('解析响应失败: ' + e.message, false);
+        }
+    };
+    xhr.onerror = function() {
+        showPushStatus('网络错误，无法连接 GitHub', false);
+    };
+    xhr.send();
+}
+
+function showPushStatus(msg, isSuccess) {
+    var el = $('pushStatus');
+    el.style.display = 'block';
+    el.textContent = msg;
+    el.className = 'status-bar';
+    if (isSuccess === true) el.className += ' saved';
+    if (isSuccess === null) el.className += '';
+    if (isSuccess !== null) {
+        setTimeout(function() { el.style.display = 'none'; }, 5000);
+    }
+}
+
+function toggleTokenVisibility() {
+    var input = $('githubToken');
+    var btn = $('toggleTokenBtn');
+    if (input.type === 'password') {
+        input.type = 'text';
+        btn.textContent = '🙈';
+    } else {
+        input.type = 'password';
+        btn.textContent = '👁';
+    }
 }
 
 // ====== 初始化 ======
@@ -351,6 +451,7 @@ document.addEventListener('DOMContentLoaded', function() {
     init();
     $('loginBtn').addEventListener('click', login);
     $('togglePwdBtn').addEventListener('click', togglePwdVisibility);
+    $('toggleTokenBtn').addEventListener('click', toggleTokenVisibility);
     $('logoutLink').addEventListener('click', function(e) {
         e.preventDefault();
         logout();
