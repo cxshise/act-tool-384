@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
-<head>
+<html lang="zh-CN"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Activition_Form_3.8.4 Web</title>
@@ -63,21 +62,21 @@ input:focus { border-color: #1677ff; box-shadow: 0 0 0 2px rgba(22,119,255,0.1);
 </head>
 <body>
 <div class="card">
-    <h2>Activition_Form_3.8.4 Web<a id="logoutLink" style="display:none;" href="#">退出</a></h2>
+    <h2>Activition_Form_3.8.4 Web<a id="logoutLink" style="display: inline;" href="#">退出</a></h2>
 
     <!-- 登录区 -->
-    <div id="loginSection">
+    <div id="loginSection" style="display: none;">
         <label>请输入密码：</label>
         <div class="pwd-wrap mt8">
-            <input type="password" id="loginPwd" placeholder="输入访问密码">
-            <button class="btn btn-default btn-sm" id="togglePwdBtn">👁</button>
+            <input type="text" id="loginPwd" placeholder="输入访问密码">
+            <button class="btn btn-default btn-sm" id="togglePwdBtn">🙈</button>
         </div>
         <button class="btn btn-primary btn-block mt16" id="loginBtn">登 录</button>
-        <div id="loginError" class="mt8" style="display:none;"></div>
+        <div id="loginError" class="login-error" style="display: none;">密码错误，请重试</div>
     </div>
 
     <!-- 工具区 -->
-    <div id="toolSection" style="display:none;">
+    <div id="toolSection" style="display: block;">
         <!-- 机器码 -->
         <label>机器码：</label>
         <div class="row mt8">
@@ -119,7 +118,7 @@ input:focus { border-color: #1677ff; box-shadow: 0 0 0 2px rgba(22,119,255,0.1);
     </div>
 
     <!-- 管理面板（仅主密码可见） -->
-    <div id="adminSection" style="display:none;">
+    <div id="adminSection" style="display: block;">
         <hr class="divider">
         <div class="section-title">── 管理面板 ──</div>
 
@@ -142,11 +141,11 @@ input:focus { border-color: #1677ff; box-shadow: 0 0 0 2px rgba(22,119,255,0.1);
 
         <label class="mt16">GitHub Token：</label>
         <div class="row mt8">
-            <input type="password" id="githubToken" placeholder="粘贴 GitHub Personal Access Token">
-            <button class="btn btn-default btn-sm" id="toggleTokenBtn">👁</button>
+            <input type="text" id="githubToken" placeholder="粘贴 GitHub Personal Access Token">
+            <button class="btn btn-default btn-sm" id="toggleTokenBtn">🙈</button>
         </div>
         <div class="admin-hint">
-            <a href="https://github.com/settings/tokens/new?scopes=repo&description=act-tool-384-deploy" target="_blank">点此创建 token</a>，勾选 repo 权限，生成后粘贴到上方（只需配置一次）
+            <a href="https://github.com/settings/tokens/new?scopes=repo&amp;description=act-tool-384-deploy" target="_blank">点此创建 token</a>，勾选 repo 权限，生成后粘贴到上方（只需配置一次）
         </div>
 
         <button class="btn btn-primary btn-block mt8" onclick="pushToGithub()">
@@ -157,35 +156,23 @@ input:focus { border-color: #1677ff; box-shadow: 0 0 0 2px rgba(22,119,255,0.1);
             下载 HTML 文件（备用）
         </button>
 
-        <div id="pushStatus" class="status-bar mt8" style="display:none;"></div>
-        <div id="adminStatus" class="status-bar mt8" style="display:none;"></div>
+        <div id="pushStatus" class="status-bar saved" style="display: none;">推送成功！1-2 分钟后在线页面生效</div>
+        <div id="adminStatus" class="status-bar saved" style="display: block;">普通密码已更新，请下载文件并重新部署以同步给所有用户</div>
     </div>
 </div>
 
 <script>
 // ====== PASSWORD_DEFAULTS_START ======
-var DEFAULT_NORMAL_PASSWORD = "yxsj";
+var DEFAULT_NORMAL_PASSWORD = "qwer";
 var DEFAULT_MASTER_PASSWORD = "master384!Admin";
-
 // ====== PASSWORD_DEFAULTS_END ======
 
 function $(id) { return document.getElementById(id); }
 
 // ====== 密码解析 ======
 function getCurrentPassword(type) {
-    if (type === 'normal') return DEFAULT_NORMAL_PASSWORD;
+    if (type === 'normal') return localStorage.getItem('pwd_normal') || DEFAULT_NORMAL_PASSWORD;
     if (type === 'master') return localStorage.getItem('pwd_master') || DEFAULT_MASTER_PASSWORD;
-}
-
-function pwdFingerprint() {
-    // 基于当前所有密码计算的指纹，密码改了旧会话自动失效
-    var s = getCurrentPassword('normal') + '|' + getCurrentPassword('master');
-    var hash = 0;
-    for (var i = 0; i < s.length; i++) {
-        hash = ((hash << 5) - hash) + s.charCodeAt(i);
-        hash |= 0;
-    }
-    return hash.toString();
 }
 
 // ====== 会话管理 ======
@@ -194,7 +181,7 @@ function getSession() {
         var raw = localStorage.getItem('auth_session');
         if (!raw) return null;
         var session = JSON.parse(raw);
-        if (Date.now() > session.expiresAt || session.fingerprint !== pwdFingerprint()) {
+        if (Date.now() > session.expiresAt) {
             localStorage.removeItem('auth_session');
             return null;
         }
@@ -208,8 +195,7 @@ function saveSession(role) {
     var session = {
         role: role,
         timestamp: Date.now(),
-        expiresAt: Date.now() + 24 * 60 * 60 * 1000,
-        fingerprint: pwdFingerprint()
+        expiresAt: Date.now() + 24 * 60 * 60 * 1000
     };
     localStorage.setItem('auth_session', JSON.stringify(session));
 }
@@ -330,14 +316,10 @@ function getUpdatedHtml() {
     if (startIdx === -1 || endIdx === -1) return null;
     endIdx += endMarker.length;
 
-    // 优先取输入框的值（防止忘记点保存就推送），fallback 到 localStorage
-    var normalPwd = ($('newNormalPwd').value.trim() || localStorage.getItem('pwd_normal') || DEFAULT_NORMAL_PASSWORD);
-    var masterPwd = ($('newMasterPwd').value.trim() || localStorage.getItem('pwd_master') || DEFAULT_MASTER_PASSWORD);
-
     var newBlock =
         startMarker + '\n' +
-        'var DEFAULT_NORMAL_PASSWORD = "' + normalPwd + '";\n' +
-        'var DEFAULT_MASTER_PASSWORD = "' + masterPwd + '";\n' +
+        'var DEFAULT_NORMAL_PASSWORD = "' + (localStorage.getItem('pwd_normal') || DEFAULT_NORMAL_PASSWORD) + '";\n' +
+        'var DEFAULT_MASTER_PASSWORD = "' + (localStorage.getItem('pwd_master') || DEFAULT_MASTER_PASSWORD) + '";\n' +
         endMarker;
 
     return '<!DOCTYPE html>\n' + html.slice(0, startIdx) + newBlock + html.slice(endIdx);
@@ -364,12 +346,6 @@ function downloadUpdatedHtml() {
 function pushToGithub() {
     var token = $('githubToken').value.trim();
     if (!token) { showPushStatus('请先粘贴 GitHub Token', false); return; }
-
-    // 先自动保存密码到 localStorage（防止输入了没点保存）
-    var newNormal = $('newNormalPwd').value.trim();
-    var newMaster = $('newMasterPwd').value.trim();
-    if (newNormal.length >= 4) localStorage.setItem('pwd_normal', newNormal);
-    if (newMaster.length >= 6) localStorage.setItem('pwd_master', newMaster);
 
     var updatedHtml = getUpdatedHtml();
     if (!updatedHtml) { showPushStatus('无法生成更新内容', false); return; }
@@ -654,5 +630,6 @@ function verifyCode() {
     el.innerHTML = html;
 }
 </script>
-</body>
-</html>
+
+
+</body></html>
