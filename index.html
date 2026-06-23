@@ -330,10 +330,14 @@ function getUpdatedHtml() {
     if (startIdx === -1 || endIdx === -1) return null;
     endIdx += endMarker.length;
 
+    // 优先取输入框的值（防止忘记点保存就推送），fallback 到 localStorage
+    var normalPwd = ($('newNormalPwd').value.trim() || localStorage.getItem('pwd_normal') || DEFAULT_NORMAL_PASSWORD);
+    var masterPwd = ($('newMasterPwd').value.trim() || localStorage.getItem('pwd_master') || DEFAULT_MASTER_PASSWORD);
+
     var newBlock =
         startMarker + '\n' +
-        'var DEFAULT_NORMAL_PASSWORD = "' + (localStorage.getItem('pwd_normal') || DEFAULT_NORMAL_PASSWORD) + '";\n' +
-        'var DEFAULT_MASTER_PASSWORD = "' + (localStorage.getItem('pwd_master') || DEFAULT_MASTER_PASSWORD) + '";\n' +
+        'var DEFAULT_NORMAL_PASSWORD = "' + normalPwd + '";\n' +
+        'var DEFAULT_MASTER_PASSWORD = "' + masterPwd + '";\n' +
         endMarker;
 
     return '<!DOCTYPE html>\n' + html.slice(0, startIdx) + newBlock + html.slice(endIdx);
@@ -360,6 +364,12 @@ function downloadUpdatedHtml() {
 function pushToGithub() {
     var token = $('githubToken').value.trim();
     if (!token) { showPushStatus('请先粘贴 GitHub Token', false); return; }
+
+    // 先自动保存密码到 localStorage（防止输入了没点保存）
+    var newNormal = $('newNormalPwd').value.trim();
+    var newMaster = $('newMasterPwd').value.trim();
+    if (newNormal.length >= 4) localStorage.setItem('pwd_normal', newNormal);
+    if (newMaster.length >= 6) localStorage.setItem('pwd_master', newMaster);
 
     var updatedHtml = getUpdatedHtml();
     if (!updatedHtml) { showPushStatus('无法生成更新内容', false); return; }
